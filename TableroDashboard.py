@@ -105,3 +105,83 @@ Variables = ['Marital Status', "Previous qualification", "Scholarship holder",  
 
 X_definitivo = X[Variables]
 X_definitivo["Target"] = y["TargetN"]
+
+from pgmpy.models import BayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+import scipy
+from sklearn.model_selection import train_test_split
+import pyparsing
+import torch
+import statsmodels
+import tqdm
+import joblib
+
+model = BayesianNetwork ([("Age at enrollment", "Marital Status") , ("Gender", "Previous qualification"),
+ ("Marital Status","Previous qualification"),("Father's occupation","Scholarship holder"),
+                          ("Mother's occupation","Scholarship holder"),
+                           ("Previous qualification","Tuition fees up to date"),
+                          ("Tuition fees up to date","Target"),
+                          ("Previous qualification","Previous qualification (grade) performance"),
+                          ("Previous qualification (grade) performance","Scholarship holder"),
+                           ("Previous qualification (grade) performance","Admission grade performance"),
+                          ("Scholarship holder","Target"),("Admission grade performance","% of approved evaluations 1st sem"),
+                           ("% of approved evaluations 1st sem","% of approved evaluations 2nd sem"),
+                           ("% of approved evaluations 2nd sem","Target")])
+
+from pgmpy.estimators import MaximumLikelihoodEstimator
+
+emv = MaximumLikelihoodEstimator(model, data=X_definitivo)
+
+# Estimar para nodos sin padres
+cpdem_age = emv.estimate_cpd(node="Age at enrollment")
+
+cpdem_gender = emv.estimate_cpd(node="Gender")
+
+cpdem_father = emv.estimate_cpd(node="Father's occupation")
+
+cpdem_mother = emv.estimate_cpd(node="Mother's occupation")
+
+
+# Estimar para demas nodos
+cpdem_PQ = emv.estimate_cpd(node="Previous qualification")
+
+
+cpdem_scholar = emv.estimate_cpd(node = "Scholarship holder")
+
+cpdem_TuitionDate = emv.estimate_cpd(node="Tuition fees up to date")
+
+cpdem_gradeperformance = emv.estimate_cpd(node="Previous qualification (grade) performance")
+
+
+cpdem_admision = emv.estimate_cpd(node="Admission grade performance")
+
+
+cpdem_semester1 = emv.estimate_cpd(node="% of approved evaluations 1st sem")
+
+
+cpdem_semester2 = emv.estimate_cpd(node="% of approved evaluations 2nd sem")
+
+train,test = train_test_split(X_definitivo, test_size = 0.2, random_state= 42)
+
+from pgmpy.inference import VariableElimination
+model.fit( data = train , estimator = MaximumLikelihoodEstimator)
+infer = VariableElimination(model)
+resultados =[]
+
+test.drop([2269,505,1532,949,3281],inplace=True,axis=0)
+
+for index,row in test.iterrows():
+    Variables = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance', '% of approved evaluations 1st sem', '% of approved evaluations 2nd sem']
+    evidencia={}
+    for variable in Variables:
+      evidencia[variable]= row[variable]
+    inferencia = infer.query(["Target"], evidence=evidencia)
+    valores = list(inferencia.values)
+    target = valores.index(max(valores))
+    resultados.append(target)
+
+from sklearn.metrics import accuracy_score, confusion_matrix
+accuracy = accuracy_score(test["Target"],resultados)
+
+matriz = confusion_matrix(test["Target"],resultados)
+accuracy

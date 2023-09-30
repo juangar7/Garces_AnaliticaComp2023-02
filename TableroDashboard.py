@@ -396,3 +396,118 @@ app.layout = html.Div([
     dcc.Graph(id='graph')
     
 ],   style={'backgroundColor': '#f2f2f2'})
+
+@app.callback(
+     Output('prediction', 'value'),
+     [Input('gender-dropdown', 'value'),
+     Input('age-dropdown','value'),
+     Input('education-dropdown', 'value'),
+     Input('status-dropdown', 'value'),
+     Input('occupationFather-dropdown', 'value'),
+     Input('occupationMother-dropdown', 'value'),
+     Input('scholarship holder-dropdown', 'value'),
+     Input('pagos-dropdown','value'),
+     Input('prev-quali-grade', 'value'),
+     Input('admission-grade', 'value'),
+     Input('exams-taken-1st', 'value'),
+     Input('exams-approved-1st', 'value'),
+     Input('exams-taken-2nd', 'value'),
+     Input('exams-approved-2nd', 'value')
+    ])
+
+
+
+
+def prediccion(gender,age,education,status,occupationFather,occupationMother,scholarship,pagos,educationgrade,admissiongrade,examstaken1st,examsapproved1st,examstaken2nd,examsapproved2nd):
+  
+  if not all([gender, age, education, status, occupationFather, occupationMother, scholarship, pagos, educationgrade, admissiongrade, examstaken1st, examsapproved1st, examstaken2nd, examsapproved2nd]):
+      return None
+  else :
+      
+      discretas = [gender,age,education,status,occupationFather,occupationMother,scholarship,pagos]
+      variables = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance', '% of approved evaluations 1st sem', '% of approved evaluations 2nd sem']
+      evidencia = {}
+    
+      for i in range(len(discretas)):
+        if i != 1:
+          if str(discretas[i][1]) in [" ","-"]:
+            evidencia[variables[i]]=int(discretas[i][0])
+          else:
+            if str(discretas[i][2])in [" ","-"]:
+              evidencia[variables[i]]=int(discretas[i][0:2])
+            else:
+              evidencia[variables[i]]=int(discretas[i][0:3])
+        else:
+          evidencia[variables[i]]=int(discretas[i])
+    
+      if int(educationgrade) >= 160:
+          evidencia[variables[8]] = 2
+      elif int(educationgrade) >= 120 :
+          evidencia[variables[8]] = 1
+      else:
+          evidencia[variables[9]]= 0
+    
+      if int(admissiongrade) >= 160:
+          evidencia[variables[9]] = 2
+      elif int(admissiongrade) >= 120 :
+          evidencia[variables[9]] = 1
+      else:
+          evidencia[variables[9]]= 0
+    
+      if int(examstaken1st) != 0:
+          porcentaje1st= int(examsapproved1st)/int(examstaken1st)
+          if porcentaje1st >= 0.75:
+              evidencia[variables[10]] = 4
+          elif porcentaje1st >= 0.50:
+              evidencia[variables[10]] = 3
+          elif porcentaje1st >= 0.25:
+              evidencia[variables[10]] = 2
+          else:
+              evidencia[variables[10]]= 1
+      else:
+          evidencia[variables[10]]= 0
+    
+      if int(examstaken2nd) != 0:
+          porcentaje2nd= int(examsapproved2nd)/int(examstaken2nd)
+          if porcentaje2nd >= 0.75:
+              evidencia[variables[11]] = 4
+          elif porcentaje2nd >= 0.50:
+              evidencia[variables[11]] = 3
+          elif porcentaje2nd >= 0.25:
+              evidencia[variables[11]] = 2
+          else:
+              evidencia[variables[11]]= 1
+      else:
+          evidencia[variables[11]]= 0
+    
+      inferencia = infer.query(["Target"], evidence=evidencia)
+      valores = list(inferencia.values)
+      target = valores.index(max(valores))
+    
+      if target == 0:
+        value = "Desertor"
+      elif target == 1:
+        value = "Matriculado"
+      else:
+        value=  "Graduado"
+      return value
+
+@app.callback(
+     Output("rubrocategoria-dropdown", 'options'),
+     Input("categoria-dropdown","value")
+    )
+
+def generarListaDesplegable(categoria):
+    if not categoria:
+        return dash.no_update
+    variables = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance', '% of approved evaluations 1st sem', '% of approved evaluations 2nd sem']
+    posicion = variables.index(categoria)
+    lista = listasDesplegables[posicion]
+    opciones_actualizadas = [{'label': opcion, 'value': opcion} for opcion in lista]
+    return opciones_actualizadas 
+    
+        
+@app.callback(Output("graph", 'figure'),
+[Input("categoria-dropdown", "value"),
+Input("rubrocategoria-dropdown","value")
+    ])

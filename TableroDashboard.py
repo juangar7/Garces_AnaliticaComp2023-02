@@ -185,3 +185,214 @@ accuracy = accuracy_score(test["Target"],resultados)
 
 matriz = confusion_matrix(test["Target"],resultados)
 accuracy
+
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+import plotly.express as px
+
+
+
+Ocupaciones = ['0 - Student ',
+ '1 - Representatives of the Legislative Power and Executive Bodies, Directors, Directors and Executive Managers ',
+ '2 - Specialists in Intellectual and Scientific Activities ',
+ '3 - Intermediate Level Technicians and Professions ',
+ '4 - Administrative staff ',
+ '5 - Personal Services, Security and Safety Workers and Sellers ',
+ '6 - Farmers and Skilled Workers in Agriculture, Fisheries and Forestry ',
+ '7 - Skilled Workers in Industry, Construction and Craftsmen',' 8 - Installation and Machine Operators and Assembly Workers ',
+ '9 - Unskilled Workers ',
+ '10 - Armed Forces Professions ',
+ '90 - Other Situation 99 - (blank) ',
+ '122 - Health professionals ',
+ '123 - teachers ',
+ '125 - Specialists in information and communication technologies (ICT) ',
+ '131 - Intermediate level science and engineering technicians and professions ',
+ '132 - Technicians and professionals, of intermediate level of health ',
+ '134 - Intermediate level technicians from legal, social, sports, cultural and similar services ',
+ '141 - Office workers, secretaries in general and data processing operators ',
+ '143 - Data, accounting, statistical, financial services and registry-related operators ',
+ '144 - Other administrative support staff ',
+ '151 - personal service workers ',
+ '152 - sellers ',
+ '153 - Personal care workers and the like ',
+ '171 - Skilled construction workers and the like, except electricians ',
+ '173 - Skilled workers in printing, precision instrument manufacturing, jewelers, artisans and the like ',
+ '175 - Workers in food processing, woodworking, clothing and other industries and crafts ',
+ '191 - cleaning workers ',
+ '192 - Unskilled workers in agriculture, animal production, fisheries and forestry ',
+ '193 - Unskilled workers in extractive industry, construction, manufacturing and transport ',
+ '194 - Meal preparation assistants']
+Genero = ["1 – male"," 0 – female "]
+edad =[str(i) for i in range(17,71)]
+estadoCivil = ['1 – single ',
+ '2 – married ',
+ '3 – widower ',
+ '4 – divorced ',
+ '5 – facto union ',
+ '6 – legally separated']
+educacion = ['1 - Secondary Education - 12th Year of Schooling or Eq. ',
+ "2 - Higher Education - Bachelor's Degree ",
+ '3 - Higher Education - Degree ',
+ "4 - Higher Education - Master's ",
+ '5 - Higher Education - Doctorate ',
+ '6 - Frequency of Higher Education',' 9 - 12th Year of Schooling - Not Completed ',
+ '10 - 11th Year of Schooling - Not Completed ',
+ '11 - 7th Year (Old) ',
+ '12 - Other - 11th Year of Schooling ',
+ '14 - 10th Year of Schooling ',
+ '18 - General commerce course ',
+ '19 - Basic Education 3rd Cycle (9th/10th/11th Year) or Equiv. ',
+ '22 - Technical-professional course ',
+ '26 - 7th year of schooling ',
+ '27 - 2nd cycle of the general high school course ',
+ '29 - 9th Year of Schooling - Not Completed ',
+ '30 - 8th year of schooling ',
+ "34 - Unknown 35 - Can't read or write ",
+ '36 - Can read without having a 4th year of schooling ',
+ '37 - Basic education 1st cycle (4th/5th year) or equiv. ',
+ '38 - Basic Education 2nd Cycle (6th/7th/8th Year) or Equiv. ',
+ '39 - Technological specialization course ',
+ '40 - Higher education - degree (1st cycle) ',
+ '41 - Specialized higher studies course ',
+ '42 - Professional higher technical course ',
+ '43 - Higher Education - Master (2nd cycle) ',
+ '44 - Higher Education - Doctorate (3rd cycle)']
+Beca = ["1-yes", "0-no"]
+PagosMatricula = ["1-yes", "0-no"]
+listaExamenes= ["0-menos de 120","1- entre 120 y 160", "2-entre 160 y 200"]
+listaPorcentajeAprobados = ["0- no presento examanes","1-entre 0% y 25%", "2- entre 25% y 50%","3-entre 50% y 75%", "4-entre 75% y 100%"]
+variablesFormulario = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance', '% of approved evaluations 1st sem', '% of approved evaluations 2nd sem']
+listasDesplegables= [Genero,edad,educacion,estadoCivil,Ocupaciones,Ocupaciones,Beca,PagosMatricula,listaExamenes,listaExamenes, listaPorcentajeAprobados, listaPorcentajeAprobados]
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+
+server
+
+app.layout = html.Div([
+    html.H1("Mida su riesgo de deserción"),
+    html.H2("Por favor llene los campos solicitados a continuación para poder hacer una predicción"),
+
+    html.Div("Seleccione su género"),
+    dcc.Dropdown(
+        id="gender-dropdown",
+        options=[{'label': gender, 'value': gender} for gender in Genero],
+        value="",
+    ),
+
+    html.Div("Seleccione su edad en el momento de su inscripción"),
+    dcc.Dropdown(
+        id="age-dropdown",
+        options=[{'label': age, 'value': age} for age in edad],
+        value="",
+    ),
+
+    html.Div("Seleccione su nivel educativo"),
+    dcc.Dropdown(
+        id="education-dropdown",
+        options=[{'label': education, 'value': education} for education in educacion],
+        value="",
+    ),
+
+    html.Div("Seleccione su estado civil"),
+    dcc.Dropdown(
+        id="status-dropdown",
+        options=[{'label': status, 'value': status} for status in estadoCivil],
+        value="",
+    ),
+    html.Div("Seleccione la ocupación de su padre"),
+    dcc.Dropdown(
+        id='occupationFather-dropdown',
+        options=[{'label': occupation, 'value': occupation} for occupation in Ocupaciones],
+        value="",
+    ),
+    html.Div("Seleccione la ocupación de su madre"),
+    dcc.Dropdown(
+        id='occupationMother-dropdown',
+        options=[{'label': occupation, 'value': occupation} for occupation in Ocupaciones],
+        value=""),
+    
+    html.Div("¿Se encuentra con algún apoyo económico?"),
+    dcc.Dropdown(
+        id="scholarship holder-dropdown",
+        options=[{'label': Scholarship_holder, 'value': Scholarship_holder} for Scholarship_holder in Beca],
+        value="",
+    ),
+
+    html.Div("¿Tiene registrado el pago de su matrícula?"),
+    dcc.Dropdown(
+        id="pagos-dropdown",
+        options=[{'label': Pagos, 'value': Pagos} for Pagos in PagosMatricula],
+        value="",
+    ),
+
+    html.Div("Ingrese su calificación obtenida en su institución educativa previa (Número entre 0 y 200):"),
+    dcc.Input(
+        id='prev-quali-grade',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese su calificación obtenida en el examen de admisión (Número entre 0 y 200):"),
+    dcc.Input(
+        id='admission-grade',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el número de exámenes presentados en su primer semestre:"),
+    dcc.Input(
+        id='exams-taken-1st',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el número de exámenes aprobados en su primer semestre:"),
+    dcc.Input(
+        id='exams-approved-1st',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el número de exámenes presentados en su segundo semestre:"),
+    dcc.Input(
+        id='exams-taken-2nd',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el número de exámenes aprobados en su segundo semestre:"),
+    dcc.Input(
+        id='exams-approved-2nd',
+        type='number',  # Configura el tipo de entrada como numérico
+        value=0,        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+    html.H2("Segun sus datos, su prediccion es la siguiente: "),
+    dcc.Textarea(
+        id='prediction',
+        value='La prediccion es: ',
+        style={'width': '50%', 'height': 50, "fontsize":"40px"},
+        disabled= True
+    ),
+    html.H2("Comparese con el resto de estudiantes segun una categoria de su eleccion: "),
+    dcc.Dropdown(
+        id="categoria-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in variablesFormulario],
+        value="",
+    ),
+    html.Div("Escoja algun rubro de la categoria seleccionada: "),
+    dcc.Dropdown(
+        id="rubrocategoria-dropdown",
+        value="",
+    ),
+    dcc.Graph(id='graph')
+    
+],   style={'backgroundColor': '#f2f2f2'})

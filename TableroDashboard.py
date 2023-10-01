@@ -511,3 +511,45 @@ def generarListaDesplegable(categoria):
 [Input("categoria-dropdown", "value"),
 Input("rubrocategoria-dropdown","value")
     ])
+
+def grafica(categoria,rubrocategoria):
+  if categoria is None or rubrocategoria is None or categoria == "" or rubrocategoria == "":
+        # Mostrar un mensaje de error en el gráfico
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig = px.scatter(empty_data, x='x', y='y', text='text')
+        return fig
+    
+  if categoria != "Age at enrollment":
+      if str(rubrocategoria[1]) in [" ","-"]:
+            rubro=float(rubrocategoria[0])
+      else:
+          if str(rubrocategoria[2])in [" ","-"]:
+              rubro=float(rubrocategoria[0:2])
+          else:
+              rubro=float(rubrocategoria[0:3])
+  else:
+       rubro = float(rubrocategoria)
+          
+  X_filtrado = X_definitivo[X_definitivo[categoria]==rubro]["Target"]
+        
+  titulo = "Distribucion de graduados, matriculados y desertores según la categoria: " + str(categoria) + ": " + str(rubrocategoria)
+  frecuencias =X_filtrado.value_counts().reset_index()
+  frecuencias.columns = ['Categoria', 'Frecuencia']
+  for index,row in frecuencias.iterrows():
+      if row["Categoria"] == 0:
+          frecuencias.at[index,"Categoria"] = "Desertor"
+      elif row["Categoria"] == 1:
+          frecuencias.at[index,"Categoria"] = "Matriculado"
+      else:
+          frecuencias.at[index,"Categoria"] = "Graduado"
+          
+        # Crea el gráfico de pastel con Plotly Express
+  fig = px.pie(frecuencias, names='Categoria', values='Frecuencia', title=titulo)
+        
+        # Ajusta la duración de la transición (opcional)
+  fig.update_layout(transition_duration=1200)
+  return fig
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+    

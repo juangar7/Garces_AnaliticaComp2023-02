@@ -198,3 +198,151 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import recall_score
+
+from pgmpy.models import BayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+import scipy
+from sklearn.model_selection import train_test_split
+import pyparsing
+import torch
+import statsmodels
+import tqdm
+import joblib
+
+train,test = train_test_split(df, test_size = 0.2, random_state= 42)
+test.drop([2269,505,1532,949,3281],inplace=True,axis=0)
+
+from pgmpy.inference import VariableElimination
+from pgmpy.estimators import BicScore
+
+#Infer PC
+estimated_model.fit( data = train , estimator = MaximumLikelihoodEstimator)
+
+bic_score = BicScore(train)
+# Calcula el BIC
+
+
+bic_value = bic_score.score(estimated_model)
+infer_PC = VariableElimination(estimated_model)
+
+bic_value
+
+from pgmpy.estimators import ParameterEstimator
+# Estimar parámetros utilizando MaximumLikelihoodEstimator
+estimated_modelHC1.fit( data = train , estimator = MaximumLikelihoodEstimator)
+infer_HC1 = VariableElimination(estimated_modelHC1)
+
+bic_score = BicScore(train)
+# Calcula el BIC
+bic_value = bic_score.score(estimated_modelHC1)
+print(scoring_method.score(estimated_modelHC1))
+
+bic_value
+
+
+
+estimated_modelHC2.fit( data = train , estimator = MaximumLikelihoodEstimator)
+infer_HC2 = VariableElimination(estimated_modelHC2)
+resultados_HC2 =[]
+bic_score = BicScore(train)
+# Calcula el BIC
+bic_value = bic_score.score(estimated_modelHC2)
+
+bic_value
+
+from sklearn.metrics import accuracy_score, confusion_matrix, recall_score,ConfusionMatrixDisplay
+
+#Inferencia PC
+resultadosPC = []
+probasPC = []
+
+for index,row in test.iterrows():
+    variables = ['Marital Status', 'Age at enrollment', 'Previous qualification (grade) performance', 'Gender', 'Admission grade performance', "Father's occupation", 'Scholarship holder', 'Previous qualification', 'Grade sem1', 'Grade sem2', 'Tuition fees up to date', "Mother's occupation"]
+    evidencia={}
+    for variable in Variables:
+      evidencia[variable]= row[variable]
+    inferencia = infer_PC.query(["Target"], evidence=evidencia)
+    valores = list(inferencia.values)
+    target = valores.index(max(valores))
+    proba= max(valores)
+    resultadosPC.append(target)
+    probasPC.append(proba)
+
+# METRICAS PC
+import matplotlib.pyplot as plt
+
+
+accuracy = accuracy_score(test["Target"],resultadosPC)
+matriz = confusion_matrix(test["Target"],resultadosPC)
+# Calcular el recall para cada clase individualmente
+recall_clase_0 = recall_score(test["Target"],resultadosPC ,labels=[0], average='micro')
+recall_clase_1 = recall_score(test["Target"],resultadosPC , labels=[1], average='micro')
+recall_clase_2 = recall_score(test["Target"],resultadosPC , labels=[2], average='micro')
+disp = ConfusionMatrixDisplay(confusion_matrix=matriz)
+disp.plot()
+plt.show()
+
+recall_clase_2
+
+#Inferencia HC1
+resultadosHC1 = []
+probasHC1 = []
+
+for index,row in test.iterrows():
+    variables = ['Marital Status', 'Age at enrollment', 'Previous qualification (grade) performance', 'Gender', 'Admission grade performance', "Father's occupation", 'Scholarship holder', 'Previous qualification', 'Grade sem1', 'Grade sem2', 'Tuition fees up to date', "Mother's occupation"]
+    evidencia={}
+    for variable in Variables:
+      evidencia[variable]= row[variable]
+    inferencia = infer_HC1.query(["Target"], evidence=evidencia)
+    valores = list(inferencia.values)
+    target = valores.index(max(valores))
+    proba= max(valores)
+    resultadosHC1.append(target)
+    probasHC1.append(proba)
+
+import matplotlib.pyplot as plt
+
+accuracy = accuracy_score(test["Target"],resultadosHC1)
+matriz = confusion_matrix(test["Target"],resultadosHC1)
+recall_clase_0 = recall_score(test["Target"],resultadosHC1, labels=[0], average='micro')
+recall_clase_1 = recall_score(test["Target"],resultadosHC1, labels=[1], average='micro')
+recall_clase_2 = recall_score(test["Target"],resultadosHC1, labels=[2], average='micro')
+disp = ConfusionMatrixDisplay(confusion_matrix=matriz)
+disp.plot()
+plt.show()
+
+recall_clase_2
+
+#Inferencia HC2
+resultadosHC2 = []
+probasHC2 = []
+
+for index,row in test.iterrows():
+    Variables = ['Scholarship holder', 'Gender', 'Marital Status', 'Previous qualification', 'Previous qualification (grade) performance', 'Admission grade performance', 'Grade sem1', 'Grade sem2', 'Tuition fees up to date']
+    evidencia={}
+    for variable in Variables:
+      evidencia[variable]= row[variable]
+    inferencia = infer_HC2.query(["Target"], evidence=evidencia)
+    valores = list(inferencia.values)
+    target = valores.index(max(valores))
+    proba= max(valores)
+    resultadosHC2.append(target)
+    probasHC2.append(proba)
+
+accuracy = accuracy_score(test["Target"],resultadosHC2)
+matriz = confusion_matrix(test["Target"],resultadosHC2)
+recall_clase_0 = recall_score(test["Target"],resultadosHC2, labels=[0], average='micro')
+recall_clase_1 = recall_score(test["Target"],resultadosHC2, labels=[1], average='micro')
+recall_clase_2 = recall_score(test["Target"],resultadosHC2, labels=[2], average='micro')
+disp = ConfusionMatrixDisplay(confusion_matrix=matriz)
+disp.plot()
+plt.show()
+
+recall_clase_2
+
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+accuracy = accuracy_score(test["Target"],resultados)
+
+matriz = confusion_matrix(test["Target"],resultados)
+accuracy

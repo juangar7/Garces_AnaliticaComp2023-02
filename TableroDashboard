@@ -363,3 +363,201 @@ app.layout = html.Div([
      Input('pga-2nd', 'value')
 
     ])
+
+def prediccion(gender,education,status,scholarship,pagos,educationgrade,admissiongrade,pga1,pga2):
+  
+  if not all([gender, education, status, scholarship, pagos, educationgrade, admissiongrade, pga1, pga2,]):
+      return None
+  else :
+      
+      discretas = [gender,education,status,scholarship,pagos]
+      variables = ['Gender', "Previous qualification", 'Marital Status', "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance',"Grade sem1","Grade sem2"]
+      evidencia = {}
+    
+      for i in range(len(discretas)):
+          if str(discretas[i][1]) in [" ","-"]:
+            evidencia[variables[i]]=int(discretas[i][0])
+          else:
+            if str(discretas[i][2])in [" ","-"]:
+              evidencia[variables[i]]=int(discretas[i][0:2])
+            else:
+              evidencia[variables[i]]=int(discretas[i][0:3])
+    
+      if int(educationgrade) >= 160:
+          evidencia[variables[5]] = 2
+      elif int(educationgrade) >= 120 :
+          evidencia[variables[5]] = 1
+      else:
+          evidencia[variables[5]]= 0
+    
+      if int(admissiongrade) >= 160:
+          evidencia[variables[6]] = 2
+      elif int(admissiongrade) >= 120 :
+          evidencia[variables[6]] = 1
+      else:
+          evidencia[variables[6]]= 0
+          
+      if float(pga1) >= X['Curricular units 1st sem (grade)'].quantile(0.75):
+        evidencia[variables[7]] = 4
+      elif float(pga1) >= X['Curricular units 1st sem (grade)'].quantile(0.50):
+        evidencia[variables[7]] = 3
+      elif float(pga1) >= X['Curricular units 1st sem (grade)'].quantile(0.25):
+        evidencia[variables[7]] = 2
+      else:
+        evidencia[variables[7]] = 1
+        
+      if float(pga2) >= X['Curricular units 2nd sem (grade)'].quantile(0.75):
+        evidencia[variables[8]] = 4
+      elif float(pga2) >= X['Curricular units 2nd sem (grade)'].quantile(0.50):
+        evidencia[variables[8]] = 3
+      elif float(pga2) >= X['Curricular units 2nd sem (grade)'].quantile(0.25):
+        evidencia[variables[8]] = 2
+      else:
+        evidencia[variables[8]] = 1
+      
+    
+      inferencia = infer.query(["Target"], evidence=evidencia)
+      valores = list(inferencia.values)
+      proba= max(valores)
+      target = valores.index(max(valores))
+    
+      if target == 0:
+        value = "Desertor"
+      elif target == 1:
+        value = "Matriculado"
+      else:
+        value=  "Graduado"
+        
+      respuesta = value + ", con una probabilidad del " + str(round(proba*100,0)) + "%"
+                                                              
+      return respuesta
+
+@app.callback(
+     Output("graphHeat", 'figure'),
+     Input("categoriaHeatMap-dropdown","value")
+    )
+
+def grafica(categoria):
+    if categoria is not None and categoria != "":
+        X[categoria] = X[categoria].astype('category')
+        X["Target"]= X["Target"].astype("category")
+        nombresCat = {}
+        continuas = ['Age at enrollment',"Grade sem1", "Grade sem2"]
+        if categoria not in continuas:
+            posicion = variablesFormularioHeat.index(categoria)
+            lista= listaHeat[posicion]
+            for elemento in lista:
+                nombresCat[int(elemento[0])]= elemento[4:]
+      
+                
+        nombresTarget= {0: "Desertor", 1: "Matriculado",2: "Graduado"}
+        
+        X_nuevo = pd.DataFrame()
+        X_nuevo["Target"]= X["Target"].map(nombresTarget)
+        if categoria not in continuas:
+            X_nuevo["Categoria"]= X[categoria].map(nombresCat)
+        elif categoria=='Age at enrollment':
+            X_nuevo["Categoria"]= X['Age at enrollment']
+        elif categoria== "Grade sem1":
+            X_nuevo["Categoria"]= X["Curricular units 1st sem (grade)"]
+        else:
+            X_nuevo["Categoria"]= X["Curricular units 2nd sem (grade)"]
+        
+        fig = px.density_heatmap(X_nuevo, x= "Categoria", y="Target", marginal_x="histogram")
+        fig.update_xaxes(title_text= categoria)
+        fig.update_yaxes(title_text='Estado del estudiante')
+            
+            
+    else:
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig = px.scatter(empty_data, x='x', y='y', text='text')
+    return fig
+
+@app.callback(
+     Output("rubrocategoria-dropdown", 'options'),
+     Input("categoria-dropdown","value")
+    )
+
+def generarListaDesplegable(categoria):
+    if not categoria:
+        return dash.no_update
+    variables = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance']
+    posicion = variables.index(categoria)
+    lista = listasDesplegables[posicion]
+    opciones_actualizadas = [{'label': opcion, 'value': opcion} for opcion in lista]
+    return opciones_actualizadas 
+    
+        
+@app.callback(Output("graph", 'figure'),
+[Input("categoria-dropdown", "value"),
+Input("rubrocategoria-dropdown","value")
+    ])
+
+
+def grafica(categoria,rubrocategoria):
+  if categoria is None or rubrocategoria is None or categoria == "" or rubrocategoria == "":
+        # Mostrar un mensaje de error en el gráfico
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig = px.scatter(empty_data, x='x', y='y', text='text')
+        return fig
+    
+  if categoria != "Age at enrollment":
+      if str(rubrocategoria[1]) in [" ","-"]:
+            rubro=float(rubrocategoria[0])
+      else:
+          if str(rubrocategoria[2])in [" ","-"]:
+              rubro=float(rubrocategoria[0:2])
+          else:
+              rubro=float(rubrocategoria[0:3])
+  else:
+       rubro = float(rubrocategoria)
+          
+  X_filtrado = X_definitivo[X_definitivo[categoria]==rubro]["Target"]
+        
+  titulo = "Distribucion de graduados, matriculados y desertores según la categoria: " + str(categoria) + ": " + str(rubrocategoria)
+  frecuencias =X_filtrado.value_counts().reset_index()
+  frecuencias.columns = ['Categoria', 'Frecuencia']
+  for index,row in frecuencias.iterrows():
+      if row["Categoria"] == 0:
+          frecuencias.at[index,"Categoria"] = "Desertor"
+      elif row["Categoria"] == 1:
+          frecuencias.at[index,"Categoria"] = "Matriculado"
+      else:
+          frecuencias.at[index,"Categoria"] = "Graduado"
+          
+        # Crea el gráfico de pastel con Plotly Express
+  fig = px.pie(frecuencias, names='Categoria', values='Frecuencia', title=titulo)
+        
+        # Ajusta la duración de la transición (opcional)
+  fig.update_layout(transition_duration=1200)
+  return fig
+
+@app.callback(
+     Output('graphDispersion', 'figure'),
+     Input("categoriaDispersion-dropdown","value")
+    )
+
+def grafica(categoria):
+    if categoria is not None and categoria != "":
+        X[categoria] = X[categoria].astype('category')
+        nombresCat = {}
+        posicion = variablesFormularioDispersion.index(categoria)
+        lista=listasDispersion[posicion]
+        for elemento in lista:
+            nombresCat[int(elemento[0])]= elemento[4:]
+            
+        fig = px.scatter(X, x="Curricular units 2nd sem (grade)", y="Curricular units 1st sem (grade)", color=categoria,
+                        )  # Puedes ajustar la opacidad según tus preferencias
+        for trace, label in zip(fig.data, nombresCat.values()):
+            trace.name = label
+        fig.update_layout(legend_title_text='Categorías', transition_duration=1200)
+    else:
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig = px.scatter(empty_data, x='x', y='y', text='text')
+    return fig
+      
+            
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+    

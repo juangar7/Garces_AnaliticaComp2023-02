@@ -153,3 +153,213 @@ file.close()
 from pgmpy.inference import VariableElimination
 
 infer = VariableElimination(modelo)
+
+
+Ocupaciones = ['0 - Student ',
+ '1 - Representatives of the Legislative Power and Executive Bodies, Directors, Directors and Executive Managers ',
+ '2 - Specialists in Intellectual and Scientific Activities ',
+ '3 - Intermediate Level Technicians and Professions ',
+ '4 - Administrative staff ',
+ '5 - Personal Services, Security and Safety Workers and Sellers ',
+ '6 - Farmers and Skilled Workers in Agriculture, Fisheries and Forestry ',
+ '7 - Skilled Workers in Industry, Construction and Craftsmen',' 8 - Installation and Machine Operators and Assembly Workers ',
+ '9 - Unskilled Workers ',
+ '10 - Armed Forces Professions ',
+ '90 - Other Situation 99 - (blank) ',
+ '122 - Health professionals ',
+ '123 - teachers ',
+ '125 - Specialists in information and communication technologies (ICT) ',
+ '131 - Intermediate level science and engineering technicians and professions ',
+ '132 - Technicians and professionals, of intermediate level of health ',
+ '134 - Intermediate level technicians from legal, social, sports, cultural and similar services ',
+ '141 - Office workers, secretaries in general and data processing operators ',
+ '143 - Data, accounting, statistical, financial services and registry-related operators ',
+ '144 - Other administrative support staff ',
+ '151 - personal service workers ',
+ '152 - sellers ',
+ '153 - Personal care workers and the like ',
+ '171 - Skilled construction workers and the like, except electricians ',
+ '173 - Skilled workers in printing, precision instrument manufacturing, jewelers, artisans and the like ',
+ '175 - Workers in food processing, woodworking, clothing and other industries and crafts ',
+ '191 - cleaning workers ',
+ '192 - Unskilled workers in agriculture, animal production, fisheries and forestry ',
+ '193 - Unskilled workers in extractive industry, construction, manufacturing and transport ',
+ '194 - Meal preparation assistants']
+Genero = ["1 – male","0 – female"]
+edad =[str(i) for i in range(17,71)]
+estadoCivil = ['1 – single ',
+ '2 – married ',
+ '3 – widower ',
+ '4 – divorced ',
+ '5 – facto union ',
+ '6 – legally separated']
+educacion = ['1 - Secondary Education - 12th Year of Schooling or Eq. ',
+ "2 - Higher Education - Bachelor's Degree ",
+ '3 - Higher Education - Degree ',
+ "4 - Higher Education - Master's ",
+ '5 - Higher Education - Doctorate ',
+ '6 - Frequency of Higher Education',' 9 - 12th Year of Schooling - Not Completed ',
+ '10 - 11th Year of Schooling - Not Completed ',
+ '11 - 7th Year (Old) ',
+ '12 - Other - 11th Year of Schooling ',
+ '14 - 10th Year of Schooling ',
+ '18 - General commerce course ',
+ '19 - Basic Education 3rd Cycle (9th/10th/11th Year) or Equiv. ',
+ '22 - Technical-professional course ',
+ '26 - 7th year of schooling ',
+ '27 - 2nd cycle of the general high school course ',
+ '29 - 9th Year of Schooling - Not Completed ',
+ '30 - 8th year of schooling ',
+ "34 - Unknown 35 - Can't read or write ",
+ '36 - Can read without having a 4th year of schooling ',
+ '37 - Basic education 1st cycle (4th/5th year) or equiv. ',
+ '38 - Basic Education 2nd Cycle (6th/7th/8th Year) or Equiv. ',
+ '39 - Technological specialization course ',
+ '40 - Higher education - degree (1st cycle) ',
+ '41 - Specialized higher studies course ',
+ '42 - Professional higher technical course ',
+ '43 - Higher Education - Master (2nd cycle) ',
+ '44 - Higher Education - Doctorate (3rd cycle)']
+Beca = ["1 - yes", "0 - no"]
+PagosMatricula = ["1 - yes", "0 - no"]
+Internacional = ["1 - yes", "0 - no"]
+listaExamenes= ["0-menos de 120","1- entre 120 y 160", "2-entre 160 y 200"]
+listaPorcentajeAprobados = ["0- no presento examanes","1-entre 0% y 25%", "2- entre 25% y 50%","3-entre 50% y 75%", "4-entre 75% y 100%"]
+variablesFormulario = ['Gender','Age at enrollment', "Previous qualification", 'Marital Status',"Father's occupation","Mother's occupation", "Scholarship holder",  'Tuition fees up to date','Previous qualification (grade) performance','Admission grade performance']
+variablesFormularioDispersion = ["Gender",'Marital Status',"Scholarship holder",  'Tuition fees up to date', "International", "Educational special needs"]
+variablesFormularioHeat= ["Gender",'Marital Status',"Scholarship holder",  'Tuition fees up to date', "International", "Educational special needs",'Age at enrollment',"Grade sem1", "Grade sem2"]
+listasDispersion = [Genero,estadoCivil,Beca,PagosMatricula,Internacional,Internacional,Internacional]
+listaHeat = [Genero,estadoCivil,Beca,PagosMatricula,Internacional, Internacional,Internacional]
+listasDesplegables= [Genero,edad,educacion,estadoCivil,Ocupaciones,Ocupaciones,Beca,PagosMatricula,listaExamenes,listaExamenes]
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+
+server
+
+['Marital Status', 'Previous qualification', 'Scholarship holder', 'Tuition fees up to date', 'Gender', 'Previous qualification (grade) performance', 'Admission grade performance', "Mother's occupation", "Father's occupation", 'Age at enrollment', 'Grade sem1', 'Grade sem2', 'Target']
+
+app.layout = html.Div([
+    html.H1("Medición del riesgo de deserción de los estudiantes"),
+    html.H2("Por favor llene los campos solicitados a continuación para poder hacer una predicción de un perfil de estudiante de su interes"),
+
+    html.Div("Seleccione el género"),
+    dcc.Dropdown(
+        id="gender-dropdown",
+        options=[{'label': gender, 'value': gender} for gender in Genero],
+        value="",
+    ),
+
+    html.Div("Seleccione el nivel educativo"),
+    dcc.Dropdown(
+        id="education-dropdown",
+        options=[{'label': education, 'value': education} for education in educacion],
+        value="",
+    ),
+
+    html.Div("Seleccione el estado civil"),
+    dcc.Dropdown(
+        id="status-dropdown",
+        options=[{'label': status, 'value': status} for status in estadoCivil],
+        value="",
+    ),
+    
+    html.Div("Indique si tiene beca"),
+    dcc.Dropdown(
+        id="scholarship holder-dropdown",
+        options=[{'label': Scholarship_holder, 'value': Scholarship_holder} for Scholarship_holder in Beca],
+        value="",
+    ),
+
+    html.Div("Indique si tiene registrado el pago de matricula"),
+    dcc.Dropdown(
+        id="pagos-dropdown",
+        options=[{'label': Pagos, 'value': Pagos} for Pagos in PagosMatricula],
+        value="",
+    ),
+
+    html.Div("Ingrese la calificación obtenida en la institución educativa previa (Número entre 0 y 200):"),
+    dcc.Input(
+        id='prev-quali-grade',
+        type='number',  # Configura el tipo de entrada como numérico
+        value="",        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese la calificación obtenida en el examen de admisión (Número entre 0 y 200):"),
+    dcc.Input(
+        id='admission-grade',
+        type='number',  # Configura el tipo de entrada como numérico
+        value="",        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el promedio obtenido en el primer semestre(Número entre 0 y 20):"),
+    dcc.Input(
+        id='pga-1st',
+        type='number',  # Configura el tipo de entrada como numérico
+        value="",        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.Div("Ingrese el promedio obtenido en el segundo semestre(Número entre 0 y 20):"),
+    dcc.Input(
+        id='pga-2nd',
+        type='number',  # Configura el tipo de entrada como numérico
+        value="",        # Valor inicial
+        step=1          # Incremento/decremento en cada cambio
+    ),
+
+    html.H2("Segun estos datos, la prediccion es la siguiente: "),
+    dcc.Textarea(
+        id='prediction',
+        value='La prediccion es: ',
+        style={'width': '50%', 'height': 50, "fontsize":"40px"},
+        disabled= True
+    ),
+    html.H2("Evalue el riesgo de desercion de los estudiantes segun una categoria de su eleccion: "),
+    dcc.Dropdown(
+        id="categoriaHeatMap-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in variablesFormularioHeat],
+        value="",
+    ),
+    dcc.Graph(id='graphHeat'),
+    
+    html.H2("Compare el historial de deserción de los estudiantes segun una categoria de su eleccion: "),
+    dcc.Dropdown(
+        id="categoria-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in variablesFormulario],
+        value="",
+    ),
+    html.Div("Escoja algun rubro de la categoria seleccionada: "),
+    dcc.Dropdown(
+        id="rubrocategoria-dropdown",
+        value="",
+    ),
+    dcc.Graph(id='graph'),
+    
+    html.H2("Compare el rendimiento de estudiantes en el primero y segundo semestre segun una categoria de su interes"),
+    html.Div("Escoja alguna categoria de interes "),
+    dcc.Dropdown(
+        id="categoriaDispersion-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in variablesFormularioDispersion],
+        value="",
+    ),
+    dcc.Graph(id='graphDispersion'),
+    
+], style={'backgroundColor': '#f2f2f2'})
+
+@app.callback(
+     Output('prediction', 'value'),
+     [Input('gender-dropdown', 'value'),
+     Input('education-dropdown', 'value'),
+     Input('status-dropdown', 'value'),
+     Input('scholarship holder-dropdown', 'value'),
+     Input('pagos-dropdown','value'),
+     Input('prev-quali-grade', 'value'),
+     Input('admission-grade', 'value'),
+     Input('pga-1st', 'value'),
+     Input('pga-2nd', 'value')
+
+    ])

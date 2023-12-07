@@ -50,3 +50,110 @@ def ponerNumerico(row):
 df = df.apply(ponerNumerico,axis = 1)
 
 dfN["Target"] = df["TargetN"]
+
+#Analisis estadistico de correlaciones--------------------------------------------------------------------------------------------------------------------------
+import scipy.stats as stats
+
+# Crear una matriz vacía para almacenar las correlaciones
+matriz_correlaciones = pd.DataFrame(np.zeros((len(dfN.columns[1:]), len(dfN.columns[1:]))))
+matriz_correlaciones.columns = dfN.columns[1:]
+matriz_correlaciones.index = dfN.columns[1:]
+matriz_pvalores = matriz_correlaciones
+
+# Calcular las correlaciones de Kendall y completar la matriz
+for variable1 in dfN.columns[1:]:
+    for variable2 in dfN.columns[1:]:
+        coeficiente_tau, p_valor = stats.kendalltau(dfN[variable1], dfN[variable2])
+        matriz_correlaciones.loc[variable1, variable2] = coeficiente_tau
+        matriz_pvalores.loc[variable1, variable2] = p_valor
+
+# Mostrar la matriz de correlaciones
+matriz_correlaciones
+
+
+#Aprendizaje de estructura------------------------------------------------------------------------------------------
+
+from pgmpy.estimators import PC
+from pgmpy.estimators import HillClimbSearch
+from pgmpy.estimators import K2Score
+from pgmpy.models import BayesianNetwork
+from pgmpy.estimators import MaximumLikelihoodEstimator
+from pgmpy.estimators import BicScore
+from pgmpy.models import BayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+from pgmpy.inference import VariableElimination
+import scipy
+from sklearn.model_selection import train_test_split
+import pyparsing
+import torch
+import statsmodels
+import tqdm
+import joblib
+from sklearn.metrics import roc_curve
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import ConfusionMatrixDisplay
+from pgmpy.estimators import ParameterEstimator
+
+dfNdef = dfN[['cole_area_ubicacion', 'cole_bilingue', 'cole_caracter',
+       'cole_calendario', 'cole_genero', 'cole_jornada', 'cole_naturaleza',
+       'estu_genero', 'fami_estratovivienda', 'fami_tienecomputador',
+       'fami_tieneinternet', 'desemp_ingles','Target']]
+
+train,test = train_test_split(dfNdef, test_size = 0.2, random_state= 42, stratify = dfNdef["Target"])
+
+
+#Algortimo PC------------------------------------------------------------------------------------
+
+est = PC(data=train)
+estimated_modelPC = est.estimate(variant="stable", max_cond_vars=4)
+
+print(estimated_modelPC)
+print(estimated_modelPC.nodes())
+print(estimated_modelPC.edges())
+
+
+
+estimated_modelPC = BayesianNetwork(estimated_modelPC)
+estimated_modelPC.fit( data = train , estimator = MaximumLikelihoodEstimator)
+
+bic_score = BicScore(train)
+bic_value = bic_score.score(estimated_modelPC)
+
+infer_PC = VariableElimination(estimated_modelPC)
+
+
+#Inferencia PC
+resultadosPC = []
+probasPC = []
+
+for index,row in test.iterrows():
+    variables = []
+    for variable in  list(estimated_modelPC.nodes()):
+        if variable != 'Target':
+           variables.append(variable)
+    evidencia={}
+    for variable in variables:
+      evidencia[variable]= row[variable]
+    inferencia = infer_PC.query(["Target"], evidence=evidencia)
+    valores = list(inferencia.values)
+    target = valores.index(max(valores))
+    proba= max(valores)
+    resultadosPC.append(target)
+    probasPC.append(proba)
+
+# METRICAS PC
+import matplotlib.pyplot as plt
+
+
+accuracyPC = accuracy_score(test["Target"],resultadosPC)
+matriz = confusion_matrix(test["Target"],resultadosPC)
+# Calcular el recall para cada clase individualmente
+recall_clase_0 = recall_score(test["Target"],resultadosPC ,labels=[0], average='micro')
+recall_clase_1 = recall_score(test["Target"],resultadosPC , labels=[1], average='micro')
+recall_clase_2 = recall_score(test["Target"],resultadosPC , labels=[2], average='micro')
+disp = ConfusionMatrixDisplay(confusion_matrix=matriz)
+disp.plot()
+plt.title("Matriz de PC")
+plt.show()

@@ -1,0 +1,3 @@
+select periodo, cole_area_ubicacion, cole_bilingue, cole_caracter, cole_calendario, cole_depto_ubicacion, cole_genero, cole_jornada, cole_naturaleza, estu_depto_presentacion, estu_genero, fami_estratovivienda, fami_tienecomputador, fami_tieneinternet,desemp_ingles, punt_global
+from datos
+where periodo >= 20221 and cole_depto_ubicacion = 'VALLE'

@@ -1,0 +1,343 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Sep 24 20:11:18 2023
+#http://127.0.0.1:8050/ 
+@author: juane
+"""
+import pandas as pd
+import numpy as np
+import tqdm
+from ucimlrepo import fetch_ucirepo
+import warnings
+warnings.filterwarnings("ignore")
+import math
+
+# ANALISIS EXPLORATORIO 
+import pandas as pd
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv("C:/Users/juane/AnaliticaComputacional/Proyecto3/datosValle4000.csv")
+
+#Limpiar base de datos--------------------------------------------------------------------------------------------------------------------
+df.dropna(inplace = True)
+df = df[df["periodo"] >= 20221]
+df= df[df['fami_estratovivienda'].str.contains("Estrato")]
+df.drop(['cole_depto_ubicacion','estu_depto_presentacion' ], axis = 1, inplace= True)
+df.sort_values(by = ["fami_estratovivienda","desemp_ingles"], ascending = True, inplace = True)
+
+cuantil1 = df["punt_global"].quantile(0.4)
+cuantil2 = df["punt_global"].quantile(0.8)
+
+#Grupo1 0-212
+#Grupo2 212-
+#Grupo4 287-337
+#Grupo5 337-
+
+dfN = pd.DataFrame()
+
+etiquetas= {}
+for columna in df.columns[0:-1]:
+    if columna == "periodo":
+       dfN[columna]= df[columna]
+    else:
+        dfN[columna] = pd.factorize(df[columna])[0]
+    
+    valor = 0
+    dicc = {}
+    for categoria in df[columna].unique():
+        dicc[categoria]= valor
+        valor +=1 
+        etiquetas[columna]= dicc
+        
+def ponerNumerico(row):
+    if row["punt_global"] >= cuantil2:
+        row["TargetN"] = 2
+    elif row["punt_global"] >= cuantil1:
+        row["TargetN"] = 1
+    else :
+          row["TargetN"] = 0
+    return row
+
+df = df.apply(ponerNumerico,axis = 1)
+
+dfN["Target"] = df["TargetN"]
+
+#----------------------------------------------------------------------------------------------------------------
+
+
+from pgmpy.models import BayesianNetwork
+from pgmpy.factors.discrete import TabularCPD
+import scipy
+from sklearn.model_selection import train_test_split
+import pyparsing
+import statsmodels
+import tqdm
+import joblib
+import dash
+from dash import dcc, html
+from dash.dependencies import Input, Output
+import plotly.express as px
+import pickle
+
+# Read model from PKL file 
+filename= "C:/Users/juane/AnaliticaComputacional/Proyecto3/monty.pkl"
+
+file = open(filename, 'rb')
+modelo = pickle.load(file)
+file.close()
+
+from pgmpy.inference import VariableElimination
+
+infer = VariableElimination(modelo)
+
+
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+server = app.server
+
+app.layout = html.Div([
+    html.H1("Desempeño de los estudiantes en las pruebas saber 11 para el departamento del Valle del Cauca"),
+    html.H2("Por favor llene los campos solicitados a continuación para poder hacer una predicción de un perfil de estudiante de su interes"),
+
+    html.Div("Seleccione el estrato al cual pertenece el estudiante"),
+    dcc.Dropdown(
+        id="estrato-dropdown",
+        options=[{'label': key, 'value': value} for key,value in etiquetas['fami_estratovivienda'].items()],
+        value="",
+    ),
+
+    html.Div("Seleccione si tiene servicio de internet en el hogar"),
+    dcc.Dropdown(
+        id="internet-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['fami_tieneinternet'].items()],
+        value="",
+    ),
+    
+    html.Div("Seleccione si tiene un computador en su hogar"),
+    dcc.Dropdown(
+        id="computador-dropdown",
+        options=[{'label': key, 'value': value} for key,value in etiquetas['fami_tienecomputador'].items()],
+        value="",
+    ),
+
+    html.Div("Indique el caracter del colegio"),
+    dcc.Dropdown(
+        id="caracter-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_caracter'].items()],
+        value="",
+    ),
+
+   html.Div("Indique el calendario del colegio"),
+    dcc.Dropdown(
+        id="calendario-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_calendario'].items()],
+        value="",
+    ),
+
+    html.Div("Indique el género del colegio"),
+    dcc.Dropdown(
+        id="genero-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_genero'].items()],
+        value="",
+    ),
+    
+    html.Div("Indique la ubicación del colegio"),
+    dcc.Dropdown(
+        id="ubicacion-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_area_ubicacion'].items()],
+        value="",
+    ),
+   
+
+    html.Div("Indique que tipo de jornada tiene el colegio"),
+    dcc.Dropdown(
+        id="jornada-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_jornada'].items()],
+        value="",
+    ),
+   
+    html.Div("Indique la naturaleza que tiene el colegio"),
+    dcc.Dropdown(
+        id="naturaleza-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_naturaleza'].items()],
+        value="",
+    ),
+    
+    html.Div("Indique si el colegio es bilingue"),
+    dcc.Dropdown(
+        id="bilingue-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['cole_bilingue'].items()],
+        value="",
+    ),
+    
+    html.Div("Indique el nivel de ingles del estudiante"),
+    dcc.Dropdown(
+        id="desemp-dropdown",
+         options=[{'label': key, 'value': value} for key,value in etiquetas['desemp_ingles'].items()],
+        value="",
+    ),
+    
+    
+    
+    html.H2("Segun este perfil, la prediccion para el puntaje en la prueba saber 11 es la siguiente: "),
+    dcc.Textarea(
+        id='prediction',
+        value='La prediccion es: ',
+        style={'width': '50%', 'height': 50, "fontsize":"40px"},
+        disabled= True
+    ),
+    
+    html.H2("Observe la distribucion de los puntajes por categoria de interes: "),
+    dcc.Dropdown(
+        id="categoriaBoxPlot-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in etiquetas.keys()],
+        value="",
+    ),
+    dcc.Graph(id='graphBoxPlot'),
+    
+    html.H2("Vea la distribucion de puntaje de un rubro especifico de la categoria de su interes: "),
+    dcc.Dropdown(
+        id="categoriaHist-dropdown",
+        options=[{'label': categoria, 'value': categoria} for categoria in etiquetas.keys()],
+        value="",
+    ),
+    html.Div("Escoja algun rubro de la categoria seleccionada: "),
+    dcc.Dropdown(
+        id="rubrocategoriaHist-dropdown",
+        value="",
+        ),
+   dcc.Graph(id='graphHist'),
+   dcc.Graph(id= 'graphFunnel')
+ 
+], style={'backgroundColor': '#f2f2f2'})
+
+
+
+@app.callback(
+     Output('prediction', 'value'),
+     [Input("estrato-dropdown", 'value'),
+     Input('internet-dropdown', 'value'),
+     Input('computador-dropdown', 'value'),
+     Input('caracter-dropdown', 'value'),
+     Input('calendario-dropdown','value'),
+     Input('genero-dropdown', 'value'),
+     Input('ubicacion-dropdown', 'value'),
+     Input('naturaleza-dropdown', 'value'),
+     Input('bilingue-dropdown', 'value'),
+     Input('desemp-dropdown', 'value')
+
+    ])
+
+ 
+
+def prediccion(estrato,internet,computador,caracter,calendario,genero,ubicacion,naturaleza,bilingue,desemp):
+    
+          lista = [estrato,internet,computador,caracter,calendario,genero,ubicacion,naturaleza,bilingue,desemp]
+          columnas = ['fami_estratovivienda','fami_tieneinternet','fami_tienecomputador','cole_caracter','cole_calendario','cole_genero','cole_area_ubicacion','cole_naturaleza', 'cole_bilingue','desemp_ingles']
+          evidencia = {}
+          for i in range(0,len(columnas)):
+              if lista[i]!= "":
+                 evidencia[columnas[i]]= lista[i]
+          
+    
+          inferencia = infer.query(["Target"], evidence=evidencia)
+          valores = list(inferencia.values)
+          proba= max(valores)
+          target = valores.index(max(valores))
+            
+          if target == 0:
+             resp = "Entre 0 y 235"
+          elif target == 1:
+             resp = "Entre 235 y 295"
+          else:
+             resp=  "Mas de 295"
+                
+          respuesta = resp + ", con una probabilidad del " + str(round(proba*100,0)) + "%"
+                                                                      
+          return respuesta
+
+
+@app.callback(
+     Output("graphBoxPlot", 'figure'),
+     Input("categoriaBoxPlot-dropdown","value")
+    )
+
+def graficaBoxPlot (categoria):
+    if categoria is not None and categoria != "":
+        color_discrete_map = {"Caja1": "red", "Caja2": "green", "Caja3": "blue","Caja4":"orange"}
+        fig = px.box(df, x=categoria, y="punt_global", points="all",title= "Distribucion de puntaje de las pruebas Saber 11",
+                     color_discrete_map= color_discrete_map)
+        fig.show()
+        return fig
+    else:
+        return dash.no_update
+
+
+@app.callback(
+     Output("rubrocategoriaHist-dropdown", 'options'),
+     Input("categoriaHist-dropdown","value")
+    )
+
+def generarListaDesplegable(categoria):
+    if not categoria:
+        return dash.no_update
+    lista = etiquetas[categoria].keys()
+    opciones_actualizadas = [{'label': opcion, 'value': opcion} for opcion in lista]
+    return opciones_actualizadas 
+    
+        
+@app.callback(
+    Output("graphHist", 'figure'),
+    [Input("categoriaHist-dropdown", "value"),
+     Input("rubrocategoriaHist-dropdown", "value")]
+)
+
+def graficaHist(categoria, rubrocategoria):
+    if categoria is None or rubrocategoria is None or categoria == "" or rubrocategoria == "":
+        # Mostrar un mensaje de error en el gráfico
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig_error = px.scatter(empty_data, x='x', y='y', text='text')
+        return fig_error
+
+    df_filtrado = df[df[categoria] == rubrocategoria]
+    puntajes = df_filtrado["punt_global"]
+
+    # Gráfico de Histograma
+    fig_hist = px.histogram(puntajes, nbins=10, title="Distribucion de puntajes del ICFES",
+                            labels={'value': 'puntaje obtenido en el ICFES', 'Numero de estudiantes': 'Numero de estudiantes'},
+                            color_discrete_sequence=['green'])
+    return fig_hist
+
+@app.callback(
+    Output("graphFunnel", 'figure'),
+    [Input("categoriaHist-dropdown", "value"),
+     Input("rubrocategoriaHist-dropdown", "value")]
+)
+
+
+def graficaFunnel(categoria, rubrocategoria):
+    if categoria is None or rubrocategoria is None or categoria == "" or rubrocategoria == "":
+        # Mostrar un mensaje de error en el gráfico
+        empty_data = pd.DataFrame({'x': [0], 'y': [0], 'text': ['Seleccione valores válidos en los dropdowns']})
+        fig_error = px.scatter(empty_data, x='x', y='y', text='text')
+        return fig_error
+# Gráfico de Embudo
+
+    df_f = df[df[categoria]== rubrocategoria]
+    data_funnel = dict(
+        numeroDeEstudiantes=[len(df_f["punt_global"]), len(df_f[df_f["punt_global"] >= 200]),
+                len(df_f[df_f["punt_global"] >= 250]), len(df_f[df_f["punt_global"] >= 300])],
+        puntajeObtenido=["Estudiantes inscritos", "mas de 150", "mas de 250", "mas de 300"]
+    )
+    fig_funnel = px.funnel(data_funnel, x='numeroDeEstudiantes', y='puntajeObtenido',
+                           title="Grafico de embudo de los puntajes obtenidos")
+
+    return fig_funnel
+
+
+if __name__ == '__main__':
+    app.run_server(debug=True)
+    

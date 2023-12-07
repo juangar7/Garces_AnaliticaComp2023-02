@@ -1,0 +1,52 @@
+# ANALISIS EXPLORATORIO 
+import pandas as pd
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore")
+
+df = pd.read_csv("DatosValle4000.csv")
+
+
+#Limpiar base de datos--------------------------------------------------------------------------------------------------------------------
+df.dropna(inplace = True)
+df = df[df["periodo"] >= 20221]
+df= df[df['fami_estratovivienda'].str.contains("Estrato")]
+df.drop(['cole_depto_ubicacion','estu_depto_presentacion' ], axis = 1, inplace= True)
+df.sort_values(by = ["fami_estratovivienda","desemp_ingles"], ascending = True, inplace = True)
+
+cuantil1 = df["punt_global"].quantile(0.4)
+cuantil2 = df["punt_global"].quantile(0.8)
+
+#Grupo1 0-212
+#Grupo2 212-
+#Grupo4 287-337
+#Grupo5 337-
+
+dfN = pd.DataFrame()
+
+etiquetas= []
+for columna in df.columns[0:-1]:
+    if columna == "periodo":
+       dfN[columna]= df[columna]
+    else:
+        dfN[columna] = pd.factorize(df[columna])[0]
+    
+    valor = 0
+    dicc = {}
+    for categoria in df[columna].unique():
+        dicc[categoria]= valor
+        valor +=1 
+    etiquetas.append(dicc)
+        
+def ponerNumerico(row):
+    if row["punt_global"] >= cuantil2:
+        row["TargetN"] = 2
+    elif row["punt_global"] >= cuantil1:
+        row["TargetN"] = 1
+    else :
+          row["TargetN"] = 0
+    return row
+
+df = df.apply(ponerNumerico,axis = 1)
+
+dfN["Target"] = df["TargetN"]
